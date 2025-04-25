@@ -5795,4 +5795,40 @@ bool GCodes::EvaluateValueForDisplay(const char *_ecv_array str, ExpressionValue
 
 #endif
 
+GCodeResult GCodes::HandleG100(GCodeBuffer& gb, const StringRef& reply) THROWS(GCodeException)
+{
+	debugPrintf(">>> [G100] Starting HandleG100\n");
+	
+	if (GetMovementState(gb).segmentsLeft != 0)
+	{
+		debugPrintf("[G100] Segments left: %u, not ready yet\n", GetMovementState(gb).segmentsLeft);
+		return GCodeResult::notFinished;
+	}
+	if (!LockMovement(gb))
+	{
+		debugPrintf("[G100] Could not lock movement system\n");
+		return GCodeResult::notFinished;
+	}
+
+	try
+	{
+		if (!DoStraightMove(gb, true))
+		{
+			debugPrintf("[G100] DoStraightMove returned false (incomplete)\n");
+			return GCodeResult::notFinished;
+		}
+	}
+	catch (const GCodeException& exc)
+	{
+		debugPrintf("[G100] Exception: %s\n", exc.what());
+		platform.GetEndstops().ClearEndstops();
+		gb.SetState(GCodeState::abortWhenMovementFinished);
+		gb.LatestMachineState().SetError(exc);
+		return GCodeResult::error;
+	}
+
+	debugPrintf("[G100] Move successfully queued\n");
+	return GCodeResult::ok;
+}
+
 // End
