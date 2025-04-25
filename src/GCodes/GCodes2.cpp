@@ -573,6 +573,10 @@ bool GCodes::HandleGcode(GCodeBuffer& gb, const StringRef& reply) THROWS(GCodeEx
 			reprap.InputsUpdated();
 			break;
 
+		case 100:  // G100 - Custom straight-line move
+			result = HandleG100(gb, reply);
+			break;
+
 		default:
 #if HAS_SBC_INTERFACE
 			// Send unknown non-binary codes to DSF so potential plugins can interpret them
